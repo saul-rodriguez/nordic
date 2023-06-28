@@ -1,0 +1,23 @@
+This project is an example of the Nordic UART Service (NUS) which includes configuration of the connection parameters:
+- connection interval
+- supervision timeout
+- pheriperal latency
+- preferred PHY
+- MTU size
+- Data length
+
+This project consist of modifying Lesson 4 - Exercise 3 (Sending data between a UART and a Bluetooth LE connection by uding the Nordic UART Service (NUS)) by including all the concepts from Lesson 3 - Exercises 3-4. Current values assigned to the configuration parameters in prj.conf target a high throughput.  
+
+The original code for Lesson 3, exercise 3,4 and Lesson 4 -exercise 3 are available at
+
+https://github.com/NordicDeveloperAcademy/bt-fund      (commit on Jun 1, 2023)
+
+Links for lesson 3 and 4 at https://academy.nordicsemi.com
+
+https://academy.nordicsemi.com/lessons/lesson-3-bluetooth-le-connections/
+https://academy.nordicsemi.com/lessons/lesson-4-bluetooth-le-data-exchange/
+
+
+
+
+
