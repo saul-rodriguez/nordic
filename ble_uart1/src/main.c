@@ -141,11 +141,20 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 			return;
 		}
 
+/*Original code from example starts here */
+/*
 		if ((evt->data.rx.buf[buf->len - 1] == '\n') ||
 		    (evt->data.rx.buf[buf->len - 1] == '\r')) {
 			disable_req = true;
 			uart_rx_disable(uart);
 		}
+*/
+/*Original code from example ends here */
+
+/* Sauls code starts here */
+			disable_req = true;
+			uart_rx_disable(uart);
+/* Sauls code ends here */
 
 		break;
 
@@ -744,9 +753,40 @@ void ble_write_thread(void)
 		struct uart_data_t *buf = k_fifo_get(&fifo_uart_rx_data,
 						     K_FOREVER);
         /* Send data over Bluetooth LE to remote device(s) */
+		
+		/*Original Code starts here*/
+		/*
 		if (bt_nus_send(NULL, buf->data, buf->len)) {
 			LOG_WRN("Failed to send data over BLE connection");
+		}*/
+		/*Original code ends here*/
+
+		/*Sauls code starts here*/
+		
+		uint16_t payload_mtu = bt_gatt_get_mtu(current_conn) - 3;   // 3 bytes used for Attribute headers.
+        //LOG_INF("Current MTU: %d bytes", payload_mtu);
+
+		if (buf->len > payload_mtu) {
+			LOG_WRN("Large packet detected!");
+
+			
+			if(bt_nus_send(NULL, buf->data, payload_mtu)) {
+				LOG_WRN("Failed to send data over BLE connection");
+			}
+
+			if(bt_nus_send(NULL, &buf->data[payload_mtu], (buf->len - payload_mtu))) {
+				LOG_WRN("Failed to send data over BLE connection");
+			}
+
+			
+		} else {
+			if(bt_nus_send(NULL, buf->data, buf->len)) {
+				LOG_WRN("Failed to send data over BLE connection");
+			}
 		}
+
+		/*Sauls code ends here*/
+
 
 		k_free(buf);
 	}
