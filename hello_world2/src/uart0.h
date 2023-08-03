@@ -18,6 +18,8 @@ extern uint8_t tx_buf[TX_SIZE];
 //Define the receive buffer
 extern uint8_t rx_buf[RX_SIZE];
 
+extern uint8_t rx_character;
+
 int UART0_Initialize(void);
 void uart_cb(const struct device *dev, struct uart_event *evt, void *user_data);
 

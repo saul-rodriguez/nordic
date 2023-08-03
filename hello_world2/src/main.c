@@ -38,7 +38,7 @@ void main(void)
 		uint8_t reg;
 
 		    /* Read output only if new xl value is available */
-		 switch (option) {
+		 switch (rx_character) {
 		 	 	 	 case 'a':
 					 	printRawAccel();					 
 		 	 	 		break;

@@ -1,0 +1,2 @@
+osource "/home/saul/projects/nordic_work/nordic_ble_nus_test/boards/shields/*/Kconfig.defconfig"
+osource "/home/saul/installs/nordic/ncs/v2.4.0/nrf/boards/shields/*/Kconfig.defconfig"

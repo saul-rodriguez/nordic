@@ -5,6 +5,7 @@
 
 uint8_t tx_buf[TX_SIZE];
 uint8_t rx_buf[RX_SIZE];
+uint8_t rx_character = 0;
 
 int UART0_Initialize(void)
 {
@@ -37,15 +38,7 @@ void uart_cb(const struct device *dev, struct uart_event *evt, void *user_data)
 
 	case UART_RX_RDY:
 		if((evt->data.rx.len) == 1){
-
-			if(evt->data.rx.buf[evt->data.rx.offset] == '1') {
-                //gpio_pin_toggle_dt(&led);
-                LEDBLUE_Toggle();
-            } else if (evt->data.rx.buf[evt->data.rx.offset] == '2') {
-//gpio_pin_toggle_dt(&led);	
-                LEDBLUE_Toggle();
-            }
-				
+			rx_character = evt->data.rx.buf[evt->data.rx.offset];
 		}
 		break;
 	case UART_RX_DISABLED:

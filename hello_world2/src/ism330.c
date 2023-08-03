@@ -172,7 +172,9 @@ void printRawAng(void)
 		angular_rate_mdps[0] = ism330dhcx_from_fs2000dps_to_mdps(data_raw_angular_rate[0]);
 		angular_rate_mdps[1] = ism330dhcx_from_fs2000dps_to_mdps(data_raw_angular_rate[1]);
 		angular_rate_mdps[2] = ism330dhcx_from_fs2000dps_to_mdps(data_raw_angular_rate[2]);
-		printf("Angrate [mdps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2]);
+		//printf("Angrate [mdps]:%4.2f\t%4.2f\t%4.2f\r\n", angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2]);
+    //printf("Angrate [mdps]:%6.0f\t%6.0f\t%6.0f\r\n", angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2]);
+    printf("Angrate [dps]:%3.1f\t%3.1f\t%3.1f\r\n", angular_rate_mdps[0]/1000, angular_rate_mdps[1]/1000, angular_rate_mdps[2]/1000);
   }
 
 }
