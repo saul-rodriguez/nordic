@@ -1,0 +1,4 @@
+osource "/home/saul/projects/others/bt-fund/lesson4/blefund_less4_exer3/boards/shields/*/Kconfig.shield"
+osource "/home/saul/projects/nordic_bk/blefund_less4_exer3_solution/boards/shields/*/Kconfig.shield"
+osource "/home/saul/projects/nordic_work/ble_uart1/boards/shields/*/Kconfig.shield"
+osource "/home/saul/installs/nordic/ncs/v2.3.0/nrf/boards/shields/*/Kconfig.shield"

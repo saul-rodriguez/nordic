@@ -1,0 +1,23 @@
+empty_file.o: \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/misc/empty_file.c \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/boards/arm/nrf52840dk_nrf52840/nrf52840dk_nrf52840.dts \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/dts/arm/nordic/nrf52840_qiaa.dtsi \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/dts/common/mem.h \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/dts/arm/nordic/nrf52840.dtsi \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/dts/arm/armv7-m.dtsi \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/dts/common/skeleton.dtsi \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/dts/arm/nordic/nrf_common.dtsi \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/include/zephyr/dt-bindings/adc/adc.h \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/include/zephyr/dt-bindings/adc/nrf-adc.h \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/include/zephyr/dt-bindings/dt-util.h \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/include/zephyr/sys/util_macro.h \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/include/zephyr/sys/util_internal.h \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/include/zephyr/sys/util_loops.h \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/include/zephyr/dt-bindings/gpio/gpio.h \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/include/zephyr/dt-bindings/i2c/i2c.h \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/include/zephyr/dt-bindings/pinctrl/nrf-pinctrl.h \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/include/zephyr/dt-bindings/pwm/pwm.h \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/dts/common/freq.h \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/dts/arm/nordic/override.dtsi \
+ /home/saul/installs/nordic/ncs/v2.3.0/zephyr/boards/arm/nrf52840dk_nrf52840/nrf52840dk_nrf52840-pinctrl.dtsi \
+ /home/saul/projects/nordic/i2c_accel/nrf52840dk_nrf52840.overlay
