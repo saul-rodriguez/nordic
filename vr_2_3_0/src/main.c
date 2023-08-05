@@ -564,7 +564,20 @@ static void mouse_handler(struct k_work *work)
 	struct mouse_pos pos;
 
 	while (!k_msgq_get(&hids_queue, &pos, K_NO_WAIT)) {
-		mouse_movement_send(pos.x_val, pos.y_val);
+		switch (pos.flag) {
+			case FLAG_MOVEMENT:
+					mouse_movement_send(pos.x_val, pos.y_val);
+					break;
+
+			case FLAG_SCROLL:
+					mouse_scroll_send(pos.scroll);
+					break;	
+
+			default:
+					break;
+		}
+
+		//mouse_movement_send(pos.x_val, pos.y_val);
 	}
 }
 
@@ -783,7 +796,7 @@ int ISMupdate(void)
 		pos.scroll = ISM_gyro_angle.p;
   
 		// Detect if there is a scroll or mouse movement
-    	if ( abs(pos.scroll ) >  abs(pos.x_val) && abs(pos.scroll) >  abs(pos.y_val) ) {
+    	if ( abs(pos.scroll ) >  abs(pos.x_val) && abs(pos.scroll) >  abs(pos.y_val) ) {			
 			pos.flag = FLAG_SCROLL;
     	} else {
 			pos.flag = FLAG_MOVEMENT;
@@ -803,6 +816,26 @@ int ISMupdate(void)
   }
 }
 
+void mouse_scroll_send(int8_t scroll)
+{
+	for (size_t i = 0; i < CONFIG_BT_HIDS_MAX_CLIENT_COUNT; i++) {
+
+		if (!conn_mode[i].conn) {
+			continue;
+		}
+		
+		uint8_t buffer[INPUT_REP_BUTTONS_LEN];
+		
+		buffer[0] = 0;
+		buffer[1] = (uint8_t)scroll;
+		buffer[2] = 0;
+
+		bt_hids_inp_rep_send(&hids_obj, conn_mode[i].conn,
+						  INPUT_REP_BUTTONS_INDEX,
+						  buffer, sizeof(buffer), NULL);
+
+	}
+}
 
 void main(void)
 {
