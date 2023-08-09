@@ -836,7 +836,11 @@ int ISMupdate(void)
 			pos.flag = FLAG_MOVEMENT;
 		} 
 
-		data_send = 1;
+		//send mouse movement only if there is no click
+		if (left_click_state == CLICK_IDLE) {
+			data_send = 1;
+		}
+		
   } 
 
   //Accel y is used for left click
