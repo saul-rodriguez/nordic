@@ -12,6 +12,8 @@ uint8_t whoamI, rst;
 //static uint8_t tx_buffer[1000];
 
 gyro_angle ISM_gyro_angle;
+accel ISM_accel;
+
 stmdev_ctx_t dev_ctx;
 
 int32_t platform_write(void *handle, uint8_t reg, const uint8_t *bufp,
@@ -140,6 +142,18 @@ int ISM_Initialize(void)
   ism330dhcx_gy_lp1_bandwidth_set(&dev_ctx, ISM330DHCX_MEDIUM);
   ism330dhcx_gy_filter_lp1_set(&dev_ctx, PROPERTY_ENABLE);
 
+  ISM_gyro_angle.p = 0;
+  ISM_gyro_angle.r = 0;
+  ISM_gyro_angle.y = 0;
+
+  ISM_accel.last_accel_y = 0;
+  ISM_accel.diff_accel_y = 0;
+
+  ISM_accel.mov_av_buf[0] = 0;
+  ISM_accel.mov_av_buf[1] = 0;
+  ISM_accel.mov_av_buf[2] = 0;
+  ISM_accel.mov_av_buf[3] = 0;
+
 }
 
 void printRawAccel(void)
@@ -211,9 +225,39 @@ int16_t p,r,y;
     ISM_gyro_angle.y = angular_rate_mdps[2]; //X movement mouse
 
     if (abs(ISM_gyro_angle.r) || abs(ISM_gyro_angle.p) || abs(ISM_gyro_angle.y)) {
-      printf("Angrate [d]:%d\t%d\t%d\r\n", ISM_gyro_angle.r, ISM_gyro_angle.p, ISM_gyro_angle.y);
+      //printf("Angrate [d]:%d\t%d\t%d\r\n", ISM_gyro_angle.r, ISM_gyro_angle.p, ISM_gyro_angle.y);
       return 1;
     }     
   }
   return 0;
 }
+
+int getRawAccMg(void)
+{
+    //int16_t noise;
+    uint8_t reg;
+
+	  ism330dhcx_xl_flag_data_ready_get(&dev_ctx, &reg);
+
+	  if (reg) {
+      // Read acceleration field data
+	    memset(data_raw_acceleration, 0x00, 3 * sizeof(int16_t));
+	    ism330dhcx_acceleration_raw_get(&dev_ctx, data_raw_acceleration);
+	    acceleration_mg[0] = ism330dhcx_from_fs2g_to_mg(data_raw_acceleration[0]);
+	    acceleration_mg[1] = ism330dhcx_from_fs2g_to_mg(data_raw_acceleration[1]);
+	    acceleration_mg[2] = ism330dhcx_from_fs2g_to_mg(data_raw_acceleration[2]);
+	    //sprintf((char *)tx_buffer,"Acceleration [mg]:%4.2f\t%4.2f\t%4.2f\r\n", acceleration_mg[0], acceleration_mg[1], acceleration_mg[2]);
+	    //printf("Accel [mg]:%4.2f\t%4.2f\t%4.2f\r\n", acceleration_mg[0], acceleration_mg[1], acceleration_mg[2]);
+	    //printf("Accel z [mg]:%4.2f\n", (acceleration_mg[2]+119));
+            
+      //Derivation of acceletation in order to eliminate gravity
+      ISM_accel.diff_accel_y = acceleration_mg[1] - ISM_accel.last_accel_y; 
+      ISM_accel.last_accel_y = acceleration_mg[1];
+
+      //printf("Accel y]:%d\n",ISM_accel.diff_accel_y);
+
+    }
+
+    return 1;
+}
+

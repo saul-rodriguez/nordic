@@ -27,6 +27,15 @@ typedef struct gyro_angle_struct {
 
 extern gyro_angle ISM_gyro_angle;
 
+typedef struct accel_struct {
+    int16_t last_accel_y;
+    int16_t diff_accel_y;
+    int16_t mov_av_buf[4];
+} accel;
+
+extern accel ISM_accel;
+
+
 extern stmdev_ctx_t dev_ctx;
 
 int32_t platform_write(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len);
@@ -36,8 +45,10 @@ int ISM_Initialize(void);
 void printRawAccel(void);
 void printRawAng(void);
 int getRawAngDeg(void);
+
 //int ISMupdate(void);
 float_t gyro_fs2000dps_to_dps(int16_t lsb);
+int getRawAccMg(void);
 
 
 #endif

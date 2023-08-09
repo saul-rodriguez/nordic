@@ -34,10 +34,36 @@
 
 #define FLAG_MOVEMENT 0
 #define FLAG_SCROLL 1
-#define FLAG_BUTTON 2
+#define FLAG_LEFT_BUTTON 2
+
+#define SCROLL_DIVIDER 32
+#define SCROLL_TIMEOUT 500
+
+typedef enum scroll_st {
+	IDLE,
+	UP,
+	DOWN
+} scroll_states_t;
+
+scroll_states_t scroll_state;
+uint64_t scroll_time_stamp;
+
+#define CLICK_THRESHOLD	80
+#define CLICK_NOISE		30
+
+typedef enum click_st {
+	CLICK_IDLE,
+	CLICK_PRESSED,
+	CLICK_RESET
+} click_states_t;
+
+click_states_t left_click_state;
+uint64_t left_click_time_stamp;
 
 int ISMupdate(void);
 void mouse_scroll_send(int8_t scroll);
+void mouse_click_send(void);
+int getMouseClick();
 
 /*Sauls code ends here*/
 
@@ -565,6 +591,10 @@ static void mouse_handler(struct k_work *work)
 
 	while (!k_msgq_get(&hids_queue, &pos, K_NO_WAIT)) {
 		switch (pos.flag) {
+			case FLAG_LEFT_BUTTON:
+					mouse_click_send();
+					break;
+
 			case FLAG_MOVEMENT:
 					mouse_movement_send(pos.x_val, pos.y_val);
 					break;
@@ -786,10 +816,14 @@ static void bas_notify(void)
 int ISMupdate(void)
 {
   struct mouse_pos pos;
+  
   int ret;
+  int data_send;
 
+  data_send = 0;
+
+	//Angular position is used for X,Y movement and for scroll up/down
   ret = getRawAngDeg();
-
   if (ret) {
 		pos.x_val = -ISM_gyro_angle.y;
 		pos.y_val = -ISM_gyro_angle.r;
@@ -802,22 +836,72 @@ int ISMupdate(void)
 			pos.flag = FLAG_MOVEMENT;
 		} 
 
+		data_send = 1;
+  } 
+
+  //Accel y is used for left click
+  getRawAccMg();
+  ret = getMouseClick();
+  if (ret) {
+		pos.flag = FLAG_LEFT_BUTTON;
+		data_send = 1;
+  }
+
+
+	//Add here logic to reset click
+  if (left_click_state == CLICK_RESET) {
+		pos.flag = FLAG_LEFT_BUTTON;
+		data_send = 1;
+  }	
+  
+
+  //Send data if needed
+  if (data_send) {
 		ret = k_msgq_put(&hids_queue, &pos, K_NO_WAIT);
 		if (ret) {
-			printk("No space in the queue for button pressed\n");
+			printk("No space in the queue for send\n");
 		} else if (k_msgq_num_used_get(&hids_queue) == 1) {
 			k_work_submit(&hids_work);
-		}
-		
-
-		return 1;
-  } else {
-		return 0;
+		}	
   }
+  
+  return 1;
 }
 
 void mouse_scroll_send(int8_t scroll)
 {
+	int8_t scroll_attenuated;
+
+	scroll_attenuated = scroll/SCROLL_DIVIDER;
+	
+	//printk("scroll=%d\n",scroll_attenuated);
+
+	switch (scroll_state) {
+			case IDLE:		
+						if (scroll_attenuated > 0) {
+							scroll_state = UP;
+							//printk("S=UP\n");
+						} else if (scroll_attenuated < 0) {
+							scroll_state = DOWN;
+							//printk("S=DN\n");
+						} else if (scroll_attenuated == 0) {
+							return;
+						}	
+						//update timestamp;
+						scroll_time_stamp = k_uptime_get();
+						break;
+
+			case UP:	if (scroll_attenuated <= 0)
+						return;
+						break;
+
+			case DOWN:	if (scroll_attenuated >= 0)
+						return;
+						break;
+			default:
+						break;
+	} 
+
 	for (size_t i = 0; i < CONFIG_BT_HIDS_MAX_CLIENT_COUNT; i++) {
 
 		if (!conn_mode[i].conn) {
@@ -827,7 +911,83 @@ void mouse_scroll_send(int8_t scroll)
 		uint8_t buffer[INPUT_REP_BUTTONS_LEN];
 		
 		buffer[0] = 0;
-		buffer[1] = (uint8_t)scroll;
+		buffer[1] = (uint8_t)(scroll_attenuated);
+		buffer[2] = 0;
+
+		bt_hids_inp_rep_send(&hids_obj, conn_mode[i].conn,
+						  INPUT_REP_BUTTONS_INDEX,
+						  buffer, sizeof(buffer), NULL);
+
+	}
+}
+
+int getMouseClick()
+{
+	int16_t noise;
+	int16_t snr;
+
+	 //Calculate the Moving average noise
+      noise = ISM_accel.mov_av_buf[3] + 
+              ISM_accel.mov_av_buf[2] + 
+              ISM_accel.mov_av_buf[1] + 
+              ISM_accel.mov_av_buf[0];
+      noise /= 4;
+
+	   //Update the moving average filter
+      ISM_accel.mov_av_buf[3] = ISM_accel.mov_av_buf[2];
+      ISM_accel.mov_av_buf[2] = ISM_accel.mov_av_buf[1];
+      ISM_accel.mov_av_buf[1] = ISM_accel.mov_av_buf[0];
+      ISM_accel.mov_av_buf[0] = ISM_accel.diff_accel_y;
+
+	  if (abs(ISM_accel.diff_accel_y)> CLICK_THRESHOLD && abs(noise)< CLICK_NOISE) {
+			//Check if acceleration is in -X direction 
+			if (ISM_accel.diff_accel_y < 0) {
+				printf("**** click ****\n");	
+				//mouse_click_send();
+				return 1;
+			}
+
+	  }
+
+      //printf("Accel y:%d  Noise:%d\n",ISM_accel.diff_accel_y,noise);
+	  return 0;
+}
+
+void mouse_click_send(void)
+{
+	uint8_t buttons;
+
+	buttons = 0;
+	switch (left_click_state) {
+			case CLICK_IDLE:		
+								buttons = 1;
+								left_click_time_stamp = k_uptime_get();
+								left_click_state = CLICK_PRESSED;
+								printf("CLICK\n");
+								break;
+			case CLICK_PRESSED:		
+								return;
+								break;
+			case CLICK_RESET:	
+								buttons = 0;
+								left_click_state = CLICK_IDLE;
+								printf("RESET\n");
+								break;
+			default:			
+								return;
+								break;
+	}
+
+	for (size_t i = 0; i < CONFIG_BT_HIDS_MAX_CLIENT_COUNT; i++) {
+
+		if (!conn_mode[i].conn) {
+			continue;
+		}
+		
+		uint8_t buffer[INPUT_REP_BUTTONS_LEN];
+		
+		buffer[0] = buttons;
+		buffer[1] = 0;
 		buffer[2] = 0;
 
 		bt_hids_inp_rep_send(&hids_obj, conn_mode[i].conn,
@@ -840,6 +1000,7 @@ void mouse_scroll_send(int8_t scroll)
 void main(void)
 {
 	int err;
+	uint64_t cur_time, delta_time;
 
 	printk("Starting Bluetooth Peripheral HIDS mouse example\n");
 
@@ -882,6 +1043,12 @@ void main(void)
 
 	ISM_Initialize();
 
+	scroll_state = IDLE;
+	scroll_time_stamp = k_uptime_get();
+
+	left_click_state = IDLE;
+	left_click_time_stamp = k_uptime_get();
+
 	while (1) {
 		//getRawAngDeg();
 		ISMupdate();
@@ -890,5 +1057,26 @@ void main(void)
 		k_msleep(SLEEP_MS);
 		/* Battery level simulation */
 		//bas_notify();
+
+		// Check the state of the scroll
+		if (scroll_state != IDLE) {
+			cur_time = k_uptime_get();
+			delta_time = cur_time - scroll_time_stamp;
+			//printk("delta = %lld\n",delta_time);
+			if (delta_time > SCROLL_TIMEOUT) {
+				scroll_state = IDLE;
+				//printk("S=ID\n");
+			}
+		}
+
+		// Check the state of the click
+		if (left_click_state == CLICK_PRESSED) {
+			cur_time = k_uptime_get();
+			delta_time = cur_time - left_click_time_stamp;
+			if (delta_time > 200 ) {
+				left_click_state = CLICK_RESET;
+			}
+		}
+
 	}
 }
