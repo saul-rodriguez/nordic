@@ -36,8 +36,9 @@
 #define FLAG_SCROLL 1
 #define FLAG_LEFT_BUTTON 2
 
-#define SCROLL_DIVIDER 32
-#define SCROLL_TIMEOUT 500
+//#define SCROLL_THRESHOLD 10
+#define SCROLL_DIVIDER 64
+#define SCROLL_TIMEOUT 600
 
 typedef enum scroll_st {
 	IDLE,
@@ -48,7 +49,7 @@ typedef enum scroll_st {
 scroll_states_t scroll_state;
 uint64_t scroll_time_stamp;
 
-#define CLICK_THRESHOLD	80
+#define CLICK_THRESHOLD	60
 #define CLICK_NOISE		30
 
 typedef enum click_st {
@@ -882,12 +883,13 @@ void mouse_scroll_send(int8_t scroll)
 
 	switch (scroll_state) {
 			case IDLE:		
-						if (scroll_attenuated > 0) {
+						if (scroll_attenuated > 0) {							
 							scroll_state = UP;
-							//printk("S=UP\n");
+							printf("SUP:%d\n",scroll_attenuated);
 						} else if (scroll_attenuated < 0) {
 							scroll_state = DOWN;
 							//printk("S=DN\n");
+							printf("SDN:%d\n",scroll_attenuated);
 						} else if (scroll_attenuated == 0) {
 							return;
 						}	
@@ -895,12 +897,20 @@ void mouse_scroll_send(int8_t scroll)
 						scroll_time_stamp = k_uptime_get();
 						break;
 
-			case UP:	if (scroll_attenuated <= 0)
-						return;
+			case UP:	if (scroll_attenuated <= 0) {
+							return;
+						} else {
+							scroll_time_stamp = k_uptime_get();
+						}
+						
 						break;
 
-			case DOWN:	if (scroll_attenuated >= 0)
-						return;
+			case DOWN:	if (scroll_attenuated >= 0) {
+							return;
+						} else {
+							scroll_time_stamp = k_uptime_get();
+						}
+						
 						break;
 			default:
 						break;
@@ -1069,7 +1079,7 @@ void main(void)
 			//printk("delta = %lld\n",delta_time);
 			if (delta_time > SCROLL_TIMEOUT) {
 				scroll_state = IDLE;
-				//printk("S=ID\n");
+				printk("RES_SC\n");
 			}
 		}
 
