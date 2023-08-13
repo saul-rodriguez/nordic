@@ -1,0 +1,3 @@
+https://devzone.nordicsemi.com/f/nordic-q-a/99609/nrf-sample-peripheral_hids_mouse-does-not-connect-to-desktop-with-bt_hids_security_enabled-n-disconnected-reason-19
+
+Need to run "nrfjprog --recover" in order to delete pairing information in the module
