@@ -36,7 +36,7 @@
 
 #define FLAG_MOVEMENT 0
 #define FLAG_SCROLL 1
-#define FLAG_LEFT_BUTTON 2
+#define FLAG_BUTTON 2
 
 //#define SCROLL_THRESHOLD 10
 #define SCROLL_DIVIDER 64
@@ -62,6 +62,20 @@ typedef enum click_st {
 
 click_states_t left_click_state;
 uint64_t left_click_time_stamp;
+
+typedef enum pushbutton_st {
+	PB_IDLE,
+	PB_START,
+	PB_DOWN,
+	PB_UP
+} pushbutton_states_t;
+
+pushbutton_states_t lbutton_state;
+uint64_t lbutton_time_stamp;
+
+pushbutton_states_t rbutton_state;
+uint64_t rbutton_time_stamp;
+
 
 int ISMupdate(void);
 void mouse_scroll_send(int8_t scroll);
@@ -597,7 +611,7 @@ static void mouse_handler(struct k_work *work)
 		//mouse_movement_send(pos.x_val, pos.y_val);
 		/*Sauls Code*/
 		switch (pos.flag) {
-			case FLAG_LEFT_BUTTON:
+			case FLAG_BUTTON:
 					mouse_click_send();
 					break;
 
@@ -853,6 +867,7 @@ int ISMupdate(void)
   } 
 
   //Accel y is used for left click
+  /*
   getRawAccMg();
   ret = getMouseClick();
   if (ret) {
@@ -860,13 +875,51 @@ int ISMupdate(void)
 		data_send = 1;
   }
 
-
 	//Add here logic to reset click
   if (left_click_state == CLICK_RESET) {
 		pos.flag = FLAG_LEFT_BUTTON;
 		data_send = 1;
   }	
-  
+  */
+
+ //Pushbuttons are used for left and right click
+ // Check if left pushbutton was clicked
+   if (lbutton_state == PB_START) {	
+	  lbutton_state = PB_DOWN;
+	  printk("LB_DOWN\n");
+	  pos.flag = FLAG_BUTTON;
+	  data_send = 1;
+   }
+
+// Check if left pushbutton was released
+  if (lbutton_state == PB_DOWN) {
+	  if (BUTTON0_getVal() == 0) {
+  	 	  lbutton_state = PB_UP;
+		  printk("LB_UP\n");
+		  pos.flag = FLAG_BUTTON;
+		  data_send = 1;
+	  }
+  }
+
+// Check if right pushbutton was clicked
+   if (rbutton_state == PB_START) {	
+	  rbutton_state = PB_DOWN;
+	  printk("RB_DOWN\n");
+	  pos.flag = FLAG_BUTTON;
+	  data_send = 1;
+   }
+
+// Check if right pushbutton was released
+  if (rbutton_state == PB_DOWN) {
+	  if (BUTTON1_getVal() == 0) {
+  	 	  rbutton_state = PB_UP;
+		  printk("RB_UP\n");
+		  pos.flag = FLAG_BUTTON;
+		  data_send = 1;
+	  }
+  }
+
+
 
   //Send data if needed
   if (data_send) {
@@ -980,6 +1033,7 @@ void mouse_click_send(void)
 	uint8_t buttons;
 
 	buttons = 0;
+	/*
 	switch (left_click_state) {
 			case CLICK_IDLE:		
 								buttons = 1;
@@ -998,7 +1052,35 @@ void mouse_click_send(void)
 			default:			
 								return;
 								break;
+	} */
+
+	switch (lbutton_state) {
+		case PB_DOWN:	buttons = 1;
+						//left_click_time_stamp = k_uptime_get();
+						//printf("CLICK\n");
+						break;
+
+		case PB_UP:		buttons = 0;
+						lbutton_state = PB_IDLE;
+						printk("LB_IDLE\n");
+						break;
+
 	}
+
+	switch (rbutton_state) {
+		case PB_DOWN:	buttons |= 2;
+						//left_click_time_stamp = k_uptime_get();
+						//printf("CLICK\n");
+						break;
+
+		case PB_UP:		buttons = 0;
+						rbutton_state = PB_IDLE;
+						printk("RB_IDLE\n");
+						break;
+
+	}
+
+
 
 	for (size_t i = 0; i < CONFIG_BT_HIDS_MAX_CLIENT_COUNT; i++) {
 
@@ -1023,41 +1105,36 @@ void mouse_click_send(void)
 // Define the callback function
 void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-	bool data_to_send = false;
-	struct mouse_pos pos;
-	//uint32_t buttons = button_state & has_changed;
-
-	memset(&pos, 0, sizeof(struct mouse_pos));
-
+	
 	if (k_msgq_num_used_get(&mitm_queue)) {	
 			num_comp_reply(true);
 			return;		
 	}
 
-/*
-	pos.x_val -= MOVEMENT_SPEED;	
-	data_to_send = true;
-	
-	
+	printk("pins = %d\n",pins);
+	printk("val = %d\n",BIT(button.pin));
 
-	if (data_to_send) {
-		int err;
-
-		err = k_msgq_put(&hids_queue, &pos, K_NO_WAIT);
-		if (err) {
-			printk("No space in the queue for button pressed\n");
-			return;
-		}
-		if (k_msgq_num_used_get(&hids_queue) == 1) {
-			k_work_submit(&hids_work);
+	if (pins == BIT(button.pin)) {
+		if (lbutton_state == PB_IDLE) {
+			lbutton_state = PB_START;
+			lbutton_time_stamp = k_uptime_get();
+			printk("LB_START\n");
 		}
 	}
-	*/
+
+	if (pins == BIT(button1.pin)) {
+		if (rbutton_state == PB_IDLE) {
+			rbutton_state = PB_START;
+			rbutton_time_stamp = k_uptime_get();
+			printk("RB_START\n");
+		}
+	}
+
 }
 
 // Define a variable of type static struct gpio_callback
 static struct gpio_callback button_cb_data;
-
+static struct gpio_callback button1_cb_data;
 
 int main(void)
 {
@@ -1109,6 +1186,10 @@ int main(void)
 	gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin)); 	
 	gpio_add_callback(button.port, &button_cb_data);
 
+	gpio_init_callback(&button1_cb_data, button_pressed, BIT(button1.pin)); 	
+	gpio_add_callback(button1.port, &button1_cb_data);
+
+
 	ISM_Initialize();
 
 	scroll_state = IDLE;
@@ -1116,6 +1197,12 @@ int main(void)
 
 	left_click_state = IDLE;
 	left_click_time_stamp = k_uptime_get();
+
+	lbutton_state = PB_IDLE;
+	lbutton_time_stamp = k_uptime_get();
+
+	rbutton_state = PB_IDLE;
+	rbutton_time_stamp = k_uptime_get();
 
 	LEDBLUE_SetHigh();
 	k_msleep(200);
