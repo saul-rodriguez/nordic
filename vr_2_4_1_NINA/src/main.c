@@ -76,11 +76,18 @@ uint64_t lbutton_time_stamp;
 pushbutton_states_t rbutton_state;
 uint64_t rbutton_time_stamp;
 
+typedef enum mouse_st {
+	MOUSE_IDLE,
+	MOUSE_ACTIVE
+} mouse_states_t;
+
+mouse_states_t mouse_state;
 
 int ISMupdate(void);
 void mouse_scroll_send(int8_t scroll);
 void mouse_click_send(void);
 int getMouseClick();
+void checkUnpair();
 
 /*Sauls code ends here*/
 
@@ -838,6 +845,7 @@ static void bas_notify(void)
 
 int ISMupdate(void)
 {
+  uint64_t elapsed_time;
   struct mouse_pos pos;
   
   int ret;
@@ -896,6 +904,7 @@ int ISMupdate(void)
 	  if (BUTTON0_getVal() == 0) {
   	 	  lbutton_state = PB_UP;
 		  printk("LB_UP\n");
+		  lbutton_time_stamp = k_uptime_get(); // Reset mouse activation timer
 		  pos.flag = FLAG_BUTTON;
 		  data_send = 1;
 	  }
@@ -904,7 +913,7 @@ int ISMupdate(void)
 // Check if right pushbutton was clicked
    if (rbutton_state == PB_START) {	
 	  rbutton_state = PB_DOWN;
-	  printk("RB_DOWN\n");
+	  printk("RB_DOWN\n");	  
 	  pos.flag = FLAG_BUTTON;
 	  data_send = 1;
    }
@@ -914,12 +923,29 @@ int ISMupdate(void)
 	  if (BUTTON1_getVal() == 0) {
   	 	  rbutton_state = PB_UP;
 		  printk("RB_UP\n");
+		  lbutton_time_stamp = k_uptime_get(); // Reset mouse activation timer
 		  pos.flag = FLAG_BUTTON;
 		  data_send = 1;
-	  }
+	  }	  
   }
 
+//Check if user wants to unpair device
+  checkUnpair();
 
+
+// Check timeout to inactivate mouse
+  if (mouse_state == MOUSE_ACTIVE && lbutton_state == PB_IDLE  && rbutton_state == PB_IDLE ) {
+	elapsed_time = k_uptime_get() - lbutton_time_stamp;
+	if (elapsed_time > 10000 ) {
+		mouse_state = MOUSE_IDLE;
+		printk("MOUSE_IDLE");
+	}
+  }
+  
+// Send data only if mouse is active
+  if (mouse_state == MOUSE_IDLE) {
+	return 0;
+  }
 
   //Send data if needed
   if (data_send) {
@@ -1120,6 +1146,9 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 			lbutton_time_stamp = k_uptime_get();
 			printk("LB_START\n");
 		}
+		//Activate mouse
+		mouse_state = MOUSE_ACTIVE;
+		printk("MOUSE_ACTIVE\n");
 	}
 
 	if (pins == BIT(button1.pin)) {
@@ -1130,6 +1159,25 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 		}
 	}
 
+}
+
+void checkUnpair()
+{
+	uint64_t elapsed_time;
+
+	if (rbutton_state == PB_DOWN) {
+		//Check unpair timeout
+		elapsed_time = k_uptime_get() - rbutton_time_stamp;
+		
+		if (elapsed_time > 10000) {
+			printk("UNPAIR");
+			bt_unpair(BT_ID_DEFAULT,BT_ADDR_LE_ANY);
+
+			LEDBLUE_SetHigh();
+			k_msleep(200);
+			LEDBLUE_SetLow();
+	  	}
+	}
 }
 
 // Define a variable of type static struct gpio_callback
@@ -1203,6 +1251,8 @@ int main(void)
 
 	rbutton_state = PB_IDLE;
 	rbutton_time_stamp = k_uptime_get();
+
+	mouse_state = MOUSE_IDLE;
 
 	LEDBLUE_SetHigh();
 	k_msleep(200);
