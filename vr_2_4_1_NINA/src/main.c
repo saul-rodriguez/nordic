@@ -38,6 +38,8 @@
 #define FLAG_SCROLL 1
 #define FLAG_BUTTON 2
 
+#define MOVEMEMENT_DIVIDER 2
+
 //#define SCROLL_THRESHOLD 10
 #define SCROLL_DIVIDER 64
 #define SCROLL_TIMEOUT 600
@@ -624,7 +626,7 @@ static void mouse_handler(struct k_work *work)
 					break;
 
 			case FLAG_MOVEMENT:
-					mouse_movement_send(pos.x_val, pos.y_val);
+					mouse_movement_send(pos.x_val/MOVEMEMENT_DIVIDER, pos.y_val/MOVEMEMENT_DIVIDER);
 					break;
 
 			case FLAG_SCROLL:
@@ -1148,6 +1150,16 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 	//printk("pins = %d\n",pins);
 	//printk("val = %d\n",BIT(button.pin));
 
+	//Check if both buttons are down to center mouse
+	if(BUTTON0_getVal() == 1 && BUTTON1_getVal() == 1) {
+		lbutton_state = PB_START;
+		mouse_state = MOUSE_CENTER;
+		printk("MOUSE_CENTER\n");
+		return;
+	}
+
+
+	//LEFT BUTTON
 	if (pins == BIT(button.pin)) {
 		if (lbutton_state == PB_IDLE) {
 			lbutton_state = PB_START;
@@ -1167,6 +1179,7 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 
 	}
 
+	//RIGHT BUTTON
 	if (pins == BIT(button1.pin)) {
 		if (rbutton_state == PB_IDLE) {
 			rbutton_state = PB_START;
@@ -1290,6 +1303,7 @@ int main(void)
 			//printk("delta = %lld\n",delta_time);
 			if (delta_time > SCROLL_TIMEOUT) {
 				scroll_state = IDLE;
+				lbutton_time_stamp = k_uptime_get(); // Reset mouse activation timer
 				printk("RES_SC\n");
 			}
 		}
