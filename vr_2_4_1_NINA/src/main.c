@@ -78,6 +78,7 @@ uint64_t rbutton_time_stamp;
 
 typedef enum mouse_st {
 	MOUSE_IDLE,
+	MOUSE_CENTER,
 	MOUSE_ACTIVE
 } mouse_states_t;
 
@@ -1081,9 +1082,16 @@ void mouse_click_send(void)
 	} */
 
 	switch (lbutton_state) {
-		case PB_DOWN:	buttons = 1;
+		case PB_DOWN:	//buttons = 1;
 						//left_click_time_stamp = k_uptime_get();
 						//printf("CLICK\n");
+						if (mouse_state == MOUSE_CENTER) {
+							buttons = 4;
+							mouse_state = MOUSE_ACTIVE;
+							printf("MOUSE_ACTIVE\n");
+						} else {
+							buttons = 1;
+						}
 						break;
 
 		case PB_UP:		buttons = 0;
@@ -1137,8 +1145,8 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 			return;		
 	}
 
-	printk("pins = %d\n",pins);
-	printk("val = %d\n",BIT(button.pin));
+	//printk("pins = %d\n",pins);
+	//printk("val = %d\n",BIT(button.pin));
 
 	if (pins == BIT(button.pin)) {
 		if (lbutton_state == PB_IDLE) {
@@ -1146,9 +1154,17 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 			lbutton_time_stamp = k_uptime_get();
 			printk("LB_START\n");
 		}
-		//Activate mouse
+		
+		/*//Activate mouse
 		mouse_state = MOUSE_ACTIVE;
 		printk("MOUSE_ACTIVE\n");
+		*/
+		// Center mouse
+		if (mouse_state != MOUSE_ACTIVE) {
+			mouse_state = MOUSE_CENTER;
+			printk("MOUSE_CENTER\n");
+		}		
+
 	}
 
 	if (pins == BIT(button1.pin)) {
