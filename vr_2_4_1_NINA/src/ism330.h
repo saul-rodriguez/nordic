@@ -14,7 +14,7 @@ extern float angular_rate_mdps[3];
 extern uint8_t whoamI, rst;
 //static uint8_t tx_buffer[1000];
 
-#define SLEEP_MS 50
+#define SLEEP_MS 25
 
 #define I2C0_NODE DT_NODELABEL(mysensor)
 static const struct i2c_dt_spec dev_i2c = I2C_DT_SPEC_GET(I2C0_NODE);
