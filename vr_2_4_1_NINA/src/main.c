@@ -34,6 +34,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define LEFT_FINGER 
+
 #define FLAG_MOVEMENT 0
 #define FLAG_SCROLL 1
 #define FLAG_BUTTON 2
@@ -592,6 +594,10 @@ static void mouse_movement_send(int16_t x_delta, int16_t y_delta)
 			int16_t x = MAX(MIN(x_delta, 0x07ff), -0x07ff);
 			int16_t y = MAX(MIN(y_delta, 0x07ff), -0x07ff);
 
+			#ifdef LEFT_FINGER
+				y = -y;
+			#endif
+
 			/* Convert to little-endian. */
 			sys_put_le16(x, x_buff);
 			sys_put_le16(y, y_buff);
@@ -968,6 +974,10 @@ void mouse_scroll_send(int8_t scroll)
 	int8_t scroll_attenuated;
 
 	scroll_attenuated = scroll/SCROLL_DIVIDER;
+
+	#ifdef LEFT_FINGER
+		scroll_attenuated = -scroll_attenuated;
+	#endif
 	
 	//printk("scroll=%d\n",scroll_attenuated);
 
