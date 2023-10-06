@@ -44,7 +44,7 @@
 
 //#define SCROLL_THRESHOLD 10
 #define SCROLL_DIVIDER 64
-#define SCROLL_TIMEOUT 600
+#define SCROLL_TIMEOUT 800
 
 typedef enum scroll_st {
 	IDLE,
