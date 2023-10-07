@@ -1092,7 +1092,7 @@ void mouse_click_send(void)
 								return;
 								break;
 	} */
-
+	
 	switch (lbutton_state) {
 		case PB_DOWN:	//buttons = 1;
 						//left_click_time_stamp = k_uptime_get();
@@ -1102,7 +1102,11 @@ void mouse_click_send(void)
 							mouse_state = MOUSE_ACTIVE;
 							printf("MOUSE_ACTIVE\n");
 						} else {
-							buttons = 1;
+							#ifdef LEFT_FINGER
+								buttons = 2;
+							#else
+								buttons = 1;
+							#endif
 						}
 						break;
 
@@ -1113,8 +1117,14 @@ void mouse_click_send(void)
 
 	}
 
-	switch (rbutton_state) {
-		case PB_DOWN:	buttons |= 2;
+	switch (rbutton_state) {		
+		case PB_DOWN:	
+						#ifdef LEFT_FINGER
+							buttons |= 1;
+						#else
+							buttons |= 2;
+						#endif
+						
 						//left_click_time_stamp = k_uptime_get();
 						//printf("CLICK\n");
 						break;
@@ -1181,11 +1191,13 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 		mouse_state = MOUSE_ACTIVE;
 		printk("MOUSE_ACTIVE\n");
 		*/
+		#ifndef LEFT_FINGER
 		// Center mouse
 		if (mouse_state != MOUSE_ACTIVE) {
 			mouse_state = MOUSE_CENTER;
 			printk("MOUSE_CENTER\n");
 		}		
+		#endif
 
 	}
 
@@ -1196,6 +1208,16 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 			rbutton_time_stamp = k_uptime_get();
 			printk("RB_START\n");
 		}
+
+		#ifdef LEFT_FINGER
+		// Center mouse
+		if (mouse_state != MOUSE_ACTIVE) {
+			mouse_state = MOUSE_CENTER;
+			printk("MOUSE_CENTER\n");
+		}		
+		#endif
+
+
 	}
 
 }
